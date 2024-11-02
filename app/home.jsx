@@ -13,13 +13,62 @@ import {
   collection,
   query,
   getDocs,
+  getDoc,
   onSnapshot,
   orderBy,
 } from "firebase/firestore";
 import { db, auth } from "../scripts/firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 export default function HomeScreen({ navigation }) {
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const checkBiometricSetup = async (navigation) => {
+    try {
+      const currentUser = auth.currentUser;
+
+      if (!currentUser) {
+        // Handle not authenticated case
+        navigation.navigate("Login");
+        return;
+      }
+
+      // Get user document from Firestore
+      const userDoc = await getDoc(doc(db, "userBiometrics", currentUser.uid));
+
+      if (!userDoc.exists()) {
+        navigation.navigate("BiometricSetup");
+        return;
+      }
+
+      const userData = userDoc.data();
+
+      // Check if biometric setup is completed
+      if (
+        !userData.setupCompleted ||
+        !userData.hasBiometricEnabled ||
+        !userData.faceData
+      ) {
+        navigation.navigate("BiometricSetup");
+        return;
+      }
+
+      const lastUpdated = userData.lastUpdated;
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+      if (new Date(lastUpdated) < oneMonthAgo) {
+        navigation.navigate("BiometricSetup");
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking biometric setup:", error);
+      Alert.alert(
+        "Error",
+        "Failed to check biometric setup status. Please try again.",
+        [{ text: "OK" }]
+      );
+    }
+  };
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -29,6 +78,7 @@ export default function HomeScreen({ navigation }) {
       navigation.navigate("Login"); // Assuming you have a Login screen
       return;
     }
+    checkBiometricSetup(navigation);
 
     const foldersRef = collection(db, "users", user.uid, "folders");
     const q = query(foldersRef, orderBy("createdAt", "desc"));

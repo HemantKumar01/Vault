@@ -14,6 +14,9 @@ import {
   where,
   onSnapshot,
   orderBy,
+  getDoc,
+  doc,
+  deleteDoc,
 } from "firebase/firestore";
 import { decrypt } from "../scripts/encryption";
 import { auth, db } from "../scripts/firebaseConfig";
@@ -64,32 +67,73 @@ export default function FolderScreen({ route, navigation }) {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, [folderName]);
+  const deleteItem = async (itemId) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert("Error", "You must be logged in to delete passwords");
+        return;
+      }
+
+      // Get reference to the document and delete it
+      const docRef = doc(db, "users", user.uid, "passwords", itemId);
+      await deleteDoc(docRef);
+
+      // Update local state to reflect the deletion
+      setPasswords((prevPasswords) =>
+        prevPasswords.filter((password) => password.id !== itemId)
+      );
+      Alert.alert("Success", "Password deleted successfully");
+    } catch (error) {
+      console.error("Error deleting password:", error);
+      Alert.alert("Error", "Failed to delete password");
+    }
+  };
+  const getMasterKey = () => {
+    return new Promise(async (resolve, reject) => {
+      const userDoc = await getDoc(doc(db, "userBiometrics", currentUser.uid));
+      const userData = userDoc.data();
+      if (!userData) {
+        reject("User biometrics not found");
+      }
+      resolve(userData.pin);
+    });
+  };
 
   const showPassword = async (item) => {
     try {
-      // In a real app, you should get this from a secure storage solution
-      const masterPassword = "1234"; // Replace with actual master password retrieval
-      const decryptedPassword = await decrypt(item.password, masterPassword);
+      const masterPassword = await getMasterKey();
+      Alert.prompt("Enter your master key", null, async (password) => {
+        if (password == masterPassword) {
+          const decryptedPassword = await decrypt(
+            item.password,
+            masterPassword
+          );
 
-      Alert.alert(
-        item.title,
-        `Username: ${item.username}\nPassword: ${decryptedPassword}`,
-        [
-          {
-            text: "Copy Username",
-            onPress: async () => await Clipboard.setStringAsync(item.username),
-          },
-          {
-            text: "Copy Password",
-            onPress: async () =>
-              await Clipboard.setStringAsync(decryptedPassword),
-          },
-          {
-            text: "Close",
-            style: "cancel",
-          },
-        ]
-      );
+          Alert.alert(
+            item.title,
+            `Username: ${item.username}\nPassword: ${decryptedPassword}`,
+            [
+              {
+                text: "Copy Username",
+                onPress: async () =>
+                  await Clipboard.setStringAsync(item.username),
+              },
+              {
+                text: "Copy Password",
+                onPress: async () =>
+                  await Clipboard.setStringAsync(decryptedPassword),
+              },
+              {
+                text: "Close",
+                style: "cancel",
+              },
+            ]
+          );
+        } else {
+          Alert.alert("Error", "Incorrect master key");
+        }
+      });
     } catch (error) {
       Alert.alert("Error", "Could not decrypt password");
       console.error(error);
@@ -111,11 +155,9 @@ export default function FolderScreen({ route, navigation }) {
       </View>
       <TouchableOpacity
         style={styles.editButton}
-        onPress={() =>
-          navigation.navigate("EditPassword", { passwordId: item.id })
-        }
+        onPress={() => deleteItem(item.title)}
       >
-        <Ionicons name="pencil" size={20} color="#666" />
+        <Ionicons name="trash" size={20} color="#666" />
       </TouchableOpacity>
     </TouchableOpacity>
   );
@@ -134,6 +176,7 @@ export default function FolderScreen({ route, navigation }) {
       </View>
     );
   }
+  console.log(passwords);
 
   return (
     <View style={styles.container}>
@@ -145,8 +188,7 @@ export default function FolderScreen({ route, navigation }) {
         contentContainerStyle={passwords.length === 0 && styles.centerContent}
         refreshing={loading}
         onRefresh={() => {
-          setLoading(true);
-          // The onSnapshot listener will automatically refresh the data
+          // setLoading(true);
         }}
       />
     </View>

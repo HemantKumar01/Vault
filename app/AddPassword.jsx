@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Text,
+} from "react-native";
 import {
   collection,
   addDoc,
@@ -8,11 +16,13 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDoc,
   query,
   where,
 } from "firebase/firestore";
 import * as ExpoCrypto from "expo-crypto";
 import { encrypt } from "../scripts/encryption";
+import { Ionicons } from "@expo/vector-icons";
 import { auth, db } from "../scripts/firebaseConfig";
 
 export default function AddPasswordScreen({ navigation }) {
@@ -20,17 +30,38 @@ export default function AddPasswordScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [folder, setFolder] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const generatePassword = async () => {
-    const charset =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-    const randomBytes = await ExpoCrypto.getRandomBytesAsync(16);
-    let generatedPassword = "";
+    const charset = {
+      uppercase: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      lowercase: "abcdefghijklmnopqrstuvwxyz",
+      numbers: "0123456789",
+      special: "!@#$%^&*()_+",
+    };
 
-    for (let i = 0; i < 16; i++) {
-      const randomIndex = randomBytes[i] % charset.length;
-      generatedPassword += charset[randomIndex];
+    // Get one random character from each required category
+    let generatedPassword =
+      charset.uppercase[Math.floor(Math.random() * charset.uppercase.length)] +
+      charset.lowercase[Math.floor(Math.random() * charset.lowercase.length)] +
+      charset.numbers[Math.floor(Math.random() * charset.numbers.length)] +
+      charset.special[Math.floor(Math.random() * charset.special.length)];
+
+    // Generate additional characters to complete the password length
+    const allChars =
+      charset.uppercase + charset.lowercase + charset.numbers + charset.special;
+    const randomBytes = await ExpoCrypto.getRandomBytesAsync(12); // 12 more for a total of 16
+
+    for (let i = 0; i < 12; i++) {
+      const randomIndex = randomBytes[i] % allChars.length;
+      generatedPassword += allChars[randomIndex];
     }
+
+    // Shuffle the password to randomize the position of each character
+    generatedPassword = generatedPassword
+      .split("")
+      .sort(() => 0.5 - Math.random())
+      .join("");
 
     setPassword(generatedPassword);
   };
@@ -67,23 +98,30 @@ export default function AddPasswordScreen({ navigation }) {
       throw error;
     }
   };
-
+  const getMasterKey = () => {
+    return new Promise(async (resolve, reject) => {
+      const userDoc = await getDoc(doc(db, "userBiometrics", currentUser.uid));
+      const userData = userDoc.data();
+      if (!userData) {
+        reject("User biometrics not found");
+      }
+      resolve(userData.pin);
+    });
+  };
   const savePassword = async () => {
     try {
       const user = auth.currentUser;
-
+      if (!(title && password && username && folder)) {
+        Alert.alert("Error", "All fields are required");
+        return;
+      }
       if (!user) {
         Alert.alert("Error", "You must be logged in to save passwords");
         return;
       }
 
-      if (!title) {
-        Alert.alert("Error", "Title is required");
-        return;
-      }
+      const masterPassword = await getMasterKey();
 
-      // Get master password from your secure storage or state management
-      const masterPassword = "1234"; // Replace with actual master password retrieval
       const encryptedPassword = await encrypt(password, masterPassword);
 
       // Check for duplicate title
@@ -136,20 +174,53 @@ export default function AddPasswordScreen({ navigation }) {
         value={username}
         onChangeText={setUsername}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
+      <View>
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry={!isPasswordVisible}
+        />
+        <View
+          style={{
+            position: "absolute",
+            right: 10,
+            top: "30%",
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => {
+              setIsPasswordVisible(!isPasswordVisible);
+            }}
+          >
+            {isPasswordVisible ? (
+              <Ionicons name="eye" size={24} color="#4a90e2" />
+            ) : (
+              <Ionicons name="eye-off" size={24} color="#4a90e2" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.generatePassword}
+        onPress={generatePassword}
+      >
+        <Text
+          style={{
+            color: "#4a90e2",
+            textAlign: "right",
+          }}
+        >
+          Generate Strong Password
+        </Text>
+      </TouchableOpacity>
       <TextInput
         style={styles.input}
         placeholder="Folder"
         value={folder}
         onChangeText={setFolder}
       />
-      <Button title="Generate Strong Password" onPress={generatePassword} />
       <View style={styles.spacer} />
       <Button title="Save Password" onPress={savePassword} />
     </View>
@@ -166,11 +237,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ddd",
     padding: 10,
-    marginBottom: 20,
+    marginVertical: 10,
     borderRadius: 5,
   },
   spacer: {
     height: 20,
   },
+  generatePassword: {
+    marginVertical: 10,
+    backgroundColor: "",
+    marginTop: -5,
+  },
 });
-``;
