@@ -1,50 +1,47 @@
-# Welcome to your Expo app 👋
+# Vault - Cross-Platform Password Manager
+Vault is a secure, cross-platform password management solution that enables users to safely store and sync their passwords across multiple devices. Built with React Native, Expo and Firebase, it provides military-grade encryption while maintaining a seamless user experience.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+### Features
+[x] User Authentication (for syncing, before masterkey generation)
+[x] Password Encryption and Decryption (XOR based encryption based on SHA256 based salt)
+[x] Passwords organized in Folders  
+[x] Password Generation (Random password generation containing alphabets(Both cases), numbers and special characters)
+[x] Syncing across multiple devices (Everything stored encrypted in Firebase Firestors)
+[x] Setting up master PIN, Biometric (fingerprint) and Face Landmark Detection
+[x] PIN verification while showing password
+[ ] Fingerprint and FaceID are stored but still not matched while showing password
+[ ] PIN reset email
+[ ] Data Leak Alert
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-    npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+## Usage
+install `node.js` 
+Clone the repository
 ```bash
-npm run reset-project
+git clone https://github.com/HemantKumar01/Vault.git
+```
+Install the dependencies
+```bash
+npm i
+```
+goto `scripts/firebasConfig.js` and replace the firebaseConfig with your own firebaseConfig
+```javascript
+export const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-auth-domain",
+  databaseURL:"your-database-url",
+  projectId: "your-project-id",
+  storageBucket: "your-storage-bucket",
+  messagingSenderId: "your-messenger-id",
+  appId: "your-app-id"
+};
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Prebuild Android or IOS (For `react-native-vision-camera` to work)
+```bash
+npx expo run:android
+npx expo run:ios
+```
+Run the project (after prebuilding using above commands of `npx expo prebuild`)
+```bash
+npm start   
+```
