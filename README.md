@@ -47,6 +47,6 @@ Run the project (after prebuilding using above commands of `npx expo prebuild`)
 npm start   
 ```
 ### Screenshots
-<img src="screenshots/ss 6.jpg" alt="alt text" style="max-height: 300px;"> <img src="screenshots/ss 5.jpg" alt="alt text" style="max-height: 300px;">
-<img src="screenshots/ss 4.jpg" alt="alt text" style="max-height: 300px;"> <img src="screenshots/ss 3.jpg" alt="alt text" style="max-height: 300px;">
-<img src="screenshots/ss 2.jpg" alt="alt text" style="max-height: 300px;"> <img src="screenshots/ss 1.jpg" alt="alt text" style="max-height: 300px;">
+<img src="screenshots/ss 6.jpg" alt="alt text" height="300"> <img src="screenshots/ss 5.jpg" alt="alt text" height="300">
+<img src="screenshots/ss 4.jpg" alt="alt text" height="300"> <img src="screenshots/ss 3.jpg" alt="alt text" height="300">
+<img src="screenshots/ss 2.jpg" alt="alt text" height="300"> <img src="screenshots/ss 1.jpg" alt="alt text" height="300">
